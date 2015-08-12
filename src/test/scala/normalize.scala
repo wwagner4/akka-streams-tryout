@@ -6,15 +6,9 @@ import akka.actor._
 import scala.concurrent._
 import scala.concurrent.duration._
 import akka.stream.stage._
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
 class NormalizeSuite extends FunSuite with BeforeAndAfterEach {
-
-  // Create a stream of random integers with the size STREAM_SIZE
-  def src(maxSize: Int): Source[Int, Unit] = Source(() => new Iterator[Int] {
-    var cnt = 0
-    def hasNext = cnt < maxSize
-    def next = { cnt += 1; (math.random * 1000).toInt }
-  })
 
   // Transforms a stream of integers to their sum
   val maxFlow: Flow[Int, Int, Future[Int]] = {
@@ -41,7 +35,9 @@ class NormalizeSuite extends FunSuite with BeforeAndAfterEach {
       }
   }
 
-  val normFlow: Flow[Int, (Int, Double), Unit] = {
+  val bufferingNormalizeFlow: Flow[Int, Double, Unit] = {
+
+    val BUFFER_SIZE = 1600
 
     Flow() { implicit b =>
       import FlowGraph.Implicits._
@@ -49,8 +45,8 @@ class NormalizeSuite extends FunSuite with BeforeAndAfterEach {
       val zip = b.add(Zip[Int, Int]())
       val max = b.add(maxFlow)
       val fill = b.add(Flow[Int].transform(() => new Fill[Int]()))
-      val norm = b.add(Flow[(Int, Int)].map { case (value, max) => (value, value.toDouble / max) })
-      val buffer = b.add(Flow[Int].buffer(1600, OverflowStrategy.fail))
+      val norm = b.add(Flow[(Int, Int)].map { case (value, max) => value.toDouble / max })
+      val buffer = b.add(Flow[Int].buffer(BUFFER_SIZE, OverflowStrategy.fail))
 
       bcast ~> buffer ~> zip.in0
       bcast ~> max ~> fill ~> zip.in1
@@ -59,20 +55,26 @@ class NormalizeSuite extends FunSuite with BeforeAndAfterEach {
       (bcast.in, norm.outlet)
     }
   }
-
-  val STREAM_SIZE = 600
-  test("normalie a stream of size %d" format (STREAM_SIZE)) {
+  
+  def randomIntegersSource(size: Int): Source[Int, _] = {
+    val iter = Iterator.continually(ThreadLocalRandom.current().nextInt(100))
+    Source(() => iter.take(size))
+  }
+  
+  test("normalize a stream of integers") {
 
     implicit val sys = ActorSystem("sys")
     try {
       implicit val materializer = ActorMaterializer()
 
-      var cnt = 1
-      val f = src(STREAM_SIZE).via(normFlow).runForeach {
-        case (value, norm) =>
-          println("%5d: %3d -> %.3f" format (cnt, value, norm))
-          cnt += 1
-      }
+      val src: Source[Int, _] = randomIntegersSource(size = 20)
+      
+      // Converts a stream of positive integers to doubles ranging from 0 to 1.
+      // The gratest input value converts to 1
+      val normalizeFlow: Flow[Int, Double, _] = bufferingNormalizeFlow
+      
+      
+      val f = src.via(normalizeFlow).runForeach {norm => println("%.3f" format norm)}
 
       Await.result(f, 2.second)
     } finally {
