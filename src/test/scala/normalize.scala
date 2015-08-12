@@ -35,7 +35,7 @@ class NormalizeSuite extends FunSuite with BeforeAndAfterEach {
       }
   }
 
-  val bufferingNormalizeFlow: Flow[Int, Double, Unit] = {
+  val bufferingNormalizeFlow: Flow[Int, Double, _] = {
 
     val BUFFER_SIZE = 1600
 
