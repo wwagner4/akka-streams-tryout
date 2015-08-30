@@ -5,5 +5,5 @@ target
 *.swp
 .classpath
 .project
-.settings/*
+.settings
 .cache-tests
