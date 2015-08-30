@@ -35,9 +35,21 @@ class NormalizeSuite extends FunSuite with BeforeAndAfterEach {
     def source: Source[T, M]
   }
   
+  def twiceMaterializingFlow: Flow[SourceContainer[Int, _], Double, _] = ???
+  
   test("normalize a stream of source containers") {
     def test(m: Materializer): Option[Future[_]] = {
-      None
+      implicit val materializer = m
+
+      val cont: SourceContainer[Int, _] = new SourceContainer[Int, Any] {
+        def source = randomIntegersSource(size = 20)
+      }
+      val src = Source.single(cont)
+      
+      // Converts a stream of sources of positive integers to doubles ranging from 0 to 1.
+      // The greatest input value converts to 1
+      val normalizeFlow: Flow[SourceContainer[Int, _], Double, _] = twiceMaterializingFlow
+      Some(src.via(normalizeFlow).runForeach {norm => println("%.3f" format norm)})
     }
     runTest(test)
   }
