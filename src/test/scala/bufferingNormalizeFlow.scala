@@ -25,8 +25,8 @@ object BufferingNormalizeFlow {
       new StageState[A, A] {
         override def onPush(elem: A, ctx: Context[A]): SyncDirective = {
           val iter = new Iterator[A] {
-            def hasNext = true;
-            def next = elem
+            def hasNext = true
+            def next() = elem
           }
           emit(iter, ctx)
         }
@@ -43,7 +43,7 @@ object BufferingNormalizeFlow {
       val zip = b.add(Zip[Int, Int]())
       val max = b.add(maxFlow)
       val fill = b.add(Flow[Int].transform(() => new Fill[Int]()))
-      val norm = b.add(Flow[(Int, Int)].map { case (value, max) => value.toDouble / max })
+      val norm = b.add(Flow[(Int, Int)].map { case (v, m) => v.toDouble / m })
       val buffer = b.add(Flow[Int].buffer(BUFFER_SIZE, OverflowStrategy.fail))
 
       bcast ~> buffer ~> zip.in0

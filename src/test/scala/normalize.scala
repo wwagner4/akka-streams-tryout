@@ -1,11 +1,11 @@
 
-import org.scalatest._
-import akka.stream.scaladsl._
-import akka.stream._
 import akka.actor._
+import akka.stream._
+import akka.stream.scaladsl._
+import org.scalatest._
+
 import scala.concurrent._
 import scala.concurrent.duration._
-import akka.stream.stage._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 class NormalizeSuite extends FunSuite with BeforeAndAfterEach {
@@ -59,7 +59,7 @@ class NormalizeSuite extends FunSuite with BeforeAndAfterEach {
     try {
       val m = ActorMaterializer()
       f(m) match {
-        case Some(f) => Await.result(f, 2.second)
+        case Some(future) => Await.result(future, 2.second)
         case None => ()
       }
     } finally {
