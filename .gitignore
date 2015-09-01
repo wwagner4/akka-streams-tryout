@@ -8,3 +8,4 @@ target
 .settings
 .cache-tests
 .idea
+*.iml
