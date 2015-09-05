@@ -25,47 +25,19 @@ class NormalizeSuite extends FunSuite {
       // Converts a stream of positive integers to doubles ranging from 0 to 1.
       // The greatest input value converts to 1
       val normalizeFlow: Flow[Int, Double, _] = BufferingNormalizeFlow.create
-      src.via(normalizeFlow).runForeach { norm => println("%.3f" format norm) }
+      src.via(normalizeFlow).runForeach { norm => println("WITH BUFFER %.3f" format norm) }
     }
     runTest(test)
   }
 
 
   test("normalize a source of integers without buffering") {
-    import FlowGraph.Implicits._
-
-    def normalize(in: Source[Int, _]): Source[(Int, Int, Double), _] = {
-
-      def fill[T](src: Source[T, _]) = src.map(r => Source.repeat(r)).flatten(FlattenStrategy.concat)
-      def normalize: Flow[(Int, Int), (Int, Int, Double), _] = Flow[(Int, Int)].map {
-        case (n, max) => (n, max, n.toDouble / max)
-      }
-
-      val maxSrc: Source[Int, _] = in.fold(0){(currMax, n) => if (n > 0) n.max(currMax) else currMax}
-      val maxFill: Source[Int, _] = fill(maxSrc)
-
-      // Create the final source using a flow that combines the prior constructs
-      Source(in, maxFill)((mat, _) => mat) {
-
-        implicit b => (in, maxFill) =>
-
-          val zip = b.add(Zip[Int, Int]())
-          val norm = b.add(normalize)
-
-          in ~> zip.in0
-          maxFill ~> zip.in1
-          zip.out ~> norm
-
-          norm.outlet
-      }
-    }
-
 
     def test(m: Materializer): Future[_] = {
       implicit val materializer = m
 
       val src = randomIntegersSource(size = 20000)
-      val nsrc: Source[(Int, Int, Double), _] = normalize(src)
+      val nsrc: Source[(Int, Int, Double), _] = NonBufferingNormalizer.normalize(src)
 
       var cnt = 0
       nsrc.runForeach {
