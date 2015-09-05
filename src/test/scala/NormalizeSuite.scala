@@ -17,7 +17,7 @@ class NormalizeSuite extends FunSuite {
   }
 
   test("normalize a stream of integers") {
-    def test(m: Materializer): Future[_] = {
+    withMaterializer { m: Materializer =>
       implicit val materializer = m
 
       val src: Source[Int, _] = randomIntegersSource(size = 20)
@@ -27,13 +27,11 @@ class NormalizeSuite extends FunSuite {
       val normalizeFlow: Flow[Int, Double, _] = BufferingNormalizeFlow.create
       src.via(normalizeFlow).runForeach { norm => println("WITH BUFFER %.3f" format norm) }
     }
-    runTest(test)
   }
-
 
   test("normalize a source of integers without buffering") {
 
-    def test(m: Materializer): Future[_] = {
+    withMaterializer { m: Materializer =>
       implicit val materializer = m
 
       val src = randomIntegersSource(size = 20000)
@@ -46,10 +44,9 @@ class NormalizeSuite extends FunSuite {
           if (cnt % 1000 == 0) println("NO BUFFER %7d %3d - %3d - %.3f" format(cnt, n, max, norm))
       }
     }
-    runTest(test)
   }
 
-  protected def runTest(f: Materializer => Future[_]) = {
+  protected def withMaterializer(f: Materializer => Future[_]) = {
     implicit val sys = ActorSystem("sys")
     try {
       val m = ActorMaterializer()
