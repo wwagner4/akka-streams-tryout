@@ -8,4 +8,3 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http-experimental" % "1.0"
 
-EclipseKeys.withSource := true
