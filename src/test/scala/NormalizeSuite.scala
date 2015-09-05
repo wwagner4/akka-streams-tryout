@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 class NormalizeSuite extends FunSuite {
 
 
+  // A source always generating the same stream of random values
   def randomIntegersSource(size: Int): Source[Int, _] = {
     val ran = new java.util.Random(28347928347L)
     val iter = Iterator.continually(ran.nextInt(101))
@@ -20,7 +21,7 @@ class NormalizeSuite extends FunSuite {
     withMaterializer { m: Materializer =>
       implicit val materializer = m
 
-      val src: Source[Int, _] = randomIntegersSource(size = 20)
+      val src: Source[Int, _] = randomIntegersSource(size = 1600)
 
       // Converts a stream of positive integers to doubles ranging from 0 to 1.
       // The greatest input value converts to 1

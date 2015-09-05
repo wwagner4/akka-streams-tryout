@@ -11,7 +11,7 @@ object NonBufferingNormalizer {
       case (n, max) => (n, max, n.toDouble / max)
     }
 
-    val maxSrc: Source[Int, _] = in.fold(0) { (currMax, n) => if (n > 0) n.max(currMax) else currMax }
+    val maxSrc: Source[Int, _] = in.fold(0) { (currMax, n) => n.max(currMax) }
     val maxFill: Source[Int, _] = fill(maxSrc)
 
     // Create the final source using a flow that combines the prior constructs
