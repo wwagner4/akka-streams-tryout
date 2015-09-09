@@ -4,11 +4,11 @@ object NonBufferingNormalizer {
 
   import FlowGraph.Implicits._
 
-  def normalize(in: Source[Int, _]): Source[(Int, Int, Double), _] = {
+  def normalize(in: Source[Int, _]): Source[Double, _] = {
 
     def fill[T](src: Source[T, _]) = src.map(r => Source.repeat(r)).flatten(FlattenStrategy.concat)
-    def normalize: Flow[(Int, Int), (Int, Int, Double), _] = Flow[(Int, Int)].map {
-      case (n, max) => (n, max, n.toDouble / max)
+    def normalize: Flow[(Int, Int), Double, _] = Flow[(Int, Int)].map {
+      case (n, max) => n.toDouble / max
     }
 
     val maxSrc: Source[Int, _] = in.fold(0) { (currMax, n) => n.max(currMax) }

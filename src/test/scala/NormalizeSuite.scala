@@ -21,7 +21,7 @@ class NormalizeSuite extends FunSuite {
     withMaterializer { m: Materializer =>
       implicit val materializer = m
 
-      val src: Source[Int, _] = randomIntegersSource(size = 1600)
+      val src: Source[Int, _] = randomIntegersSource(size = 10)
 
       // Converts a stream of positive integers to doubles ranging from 0 to 1.
       // The greatest input value converts to 1
@@ -36,13 +36,12 @@ class NormalizeSuite extends FunSuite {
       implicit val materializer = m
 
       val src = randomIntegersSource(size = 20000)
-      val nsrc: Source[(Int, Int, Double), _] = NonBufferingNormalizer.normalize(src)
+      val nsrc: Source[Double, _] = NonBufferingNormalizer.normalize(src)
 
       var cnt = 0
-      nsrc.runForeach {
-        case (n, max, norm) =>
+      nsrc.runForeach { norm =>
           cnt += 1
-          if (cnt % 1000 == 0) println("NO BUFFER %7d %3d - %3d - %.3f" format(cnt, n, max, norm))
+          if (cnt % 1000 == 0) println("NO BUFFER %7d %.3f" format(cnt, norm))
       }
     }
   }
