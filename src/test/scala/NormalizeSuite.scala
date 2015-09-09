@@ -40,8 +40,26 @@ class NormalizeSuite extends FunSuite {
 
       var cnt = 0
       nsrc.runForeach { norm =>
-          cnt += 1
-          if (cnt % 1000 == 0) println("NO BUFFER %7d %.3f" format(cnt, norm))
+        cnt += 1
+        if (cnt % 1000 == 0) println("NO BUFFER A %7d %.3f" format(cnt, norm))
+      }
+    }
+  }
+
+  test("normalize a source of integers without buffering and general normalizer") {
+
+    withMaterializer { m: Materializer =>
+      implicit val materializer = m
+
+      val src = randomIntegersSource(size = 20000)
+      val fold = (in: Source[Int, _]) => in.fold(0) { (currMax, n) => n.max(currMax) }
+      val norm = Flow[(Int, Int)].map { case (n, max) => n.toDouble / max }
+      val nsrc: Source[Double, _] = NonBufferingNormalizer1.normalize(src, fold, norm)
+
+      var cnt = 0
+      nsrc.runForeach { norm =>
+        cnt += 1
+        if (cnt % 1000 == 0) println("NO BUFFER B %7d %.3f" format(cnt, norm))
       }
     }
   }
