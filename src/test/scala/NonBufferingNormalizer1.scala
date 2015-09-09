@@ -10,19 +10,19 @@ object NonBufferingNormalizer1 {
 
     def fill[T](src: Source[T, _]) = src.map(r => Source.repeat(r)).flatten(FlattenStrategy.concat)
 
-    val maxSrc: Source[F, _] = fold(in)
-    val maxFill: Source[F, _] = fill(maxSrc)
+    val folded: Source[F, _] = fold(in)
+    val foldedFill: Source[F, _] = fill(folded)
 
     // Create the final source using a flow that combines the prior constructs
-    Source(in, maxFill)((mat, _) => mat) {
+    Source(in, foldedFill)((mat, _) => mat) {
 
-      implicit b => (in, maxFill) =>
+      implicit b => (in, foldedFill) =>
 
         val zip = b.add(Zip[I, F]())
         val norm = b.add(normalize)
 
         in ~> zip.in0
-        maxFill ~> zip.in1
+        foldedFill ~> zip.in1
         zip.out ~> norm
 
         norm.outlet
