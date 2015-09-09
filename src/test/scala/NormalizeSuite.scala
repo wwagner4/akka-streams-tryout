@@ -67,6 +67,7 @@ class NormalizeSuite extends FunSuite {
       val src = randomIntegersSource(size = 20000)
       val fold = (in: Source[Int, _]) => in.fold(0) { (currMax, n) => n.max(currMax) }
       val norm = Flow[(Int, Int)].map { case (n, max) => n.toDouble / max }
+
       val nsrc: Source[Double, _] = NonBufferingNormalizer1.normalize(src, fold, norm)
 
       var cnt = 0
