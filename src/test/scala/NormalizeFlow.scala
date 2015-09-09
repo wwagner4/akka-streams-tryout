@@ -3,21 +3,19 @@ import scala.concurrent._
 
 object NormalizeFlow {
 
+  import FlowGraph.Implicits._
+
   // Transforms a stream of integers to their sum
   protected val maxFlow: Flow[Int, Int, Future[Int]] = {
-    import FlowGraph.Implicits._
-    val maxSink: Sink[Int, Future[Int]] = Sink.fold[Int, Int](0)((cuml, elem) => if (elem > cuml) elem else cuml)
-    Flow(maxSink) {
-      implicit builder =>
-        fold =>
-          (fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
+    val maxSink = Sink.fold[Int, Int](0)((cuml, elem) => cuml.max(elem))
+    Flow(maxSink) { implicit b => fold =>
+      (fold.inlet, b.materializedValue.mapAsync(4)(identity).outlet)
     }
   }
 
   def create: Flow[Int, Double, _] = {
 
     Flow() { implicit b =>
-      import FlowGraph.Implicits._
       val bcast = b.add(Broadcast[Int](2))
       val zip = b.add(Zip[Int, Int]())
       val max = b.add(maxFlow)
