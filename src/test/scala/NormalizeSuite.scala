@@ -25,6 +25,19 @@ class NormalizeSuite extends FunSuite {
 
       // Converts a stream of positive integers to doubles ranging from 0 to 1.
       // The greatest input value converts to 1
+      val normalizeFlow: Flow[Int, Double, _] = NormalizeFlow.create
+      src.via(normalizeFlow).runForeach { norm => println("SIMPLE %.3f" format norm) }
+    }
+  }
+
+  test("normalize a stream of integers with buffer") {
+    withMaterializer { m: Materializer =>
+      implicit val materializer = m
+
+      val src: Source[Int, _] = randomIntegersSource(size = 10)
+
+      // Converts a stream of positive integers to doubles ranging from 0 to 1.
+      // The greatest input value converts to 1
       val normalizeFlow: Flow[Int, Double, _] = BufferingNormalizeFlow.create
       src.via(normalizeFlow).runForeach { norm => println("WITH BUFFER %.3f" format norm) }
     }

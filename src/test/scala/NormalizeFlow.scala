@@ -1,9 +1,7 @@
 import akka.stream.scaladsl._
-import akka.stream._
 import scala.concurrent._
-import akka.stream.stage._
 
-object BufferingNormalizeFlow {
+object NormalizeFlow {
 
   // Transforms a stream of integers to their sum
   protected val maxFlow: Flow[Int, Int, Future[Int]] = {
@@ -18,8 +16,6 @@ object BufferingNormalizeFlow {
 
   def create: Flow[Int, Double, _] = {
 
-    val BUFFER_SIZE = 1600
-
     Flow() { implicit b =>
       import FlowGraph.Implicits._
       val bcast = b.add(Broadcast[Int](2))
@@ -27,9 +23,8 @@ object BufferingNormalizeFlow {
       val max = b.add(maxFlow)
       val fill = b.add(Flow[Int].transform(() => new Fill[Int]()))
       val norm = b.add(Flow[(Int, Int)].map { case (v, m) => v.toDouble / m })
-      val buffer = b.add(Flow[Int].buffer(BUFFER_SIZE, OverflowStrategy.fail))
 
-      bcast ~> buffer ~> zip.in0
+      bcast ~> zip.in0
       bcast ~> max ~> fill ~> zip.in1
       zip.out ~> norm
 
