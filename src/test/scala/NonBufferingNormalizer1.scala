@@ -14,9 +14,9 @@ object NonBufferingNormalizer1 {
     val foldedFill: Source[F, _] = fill(folded)
 
     // Create the final source using a flow that combines the prior constructs
-    Source(in, foldedFill)((mat, _) => mat) {
+    Source(in) {
 
-      implicit b => (in, foldedFill) =>
+      implicit b => in =>
 
         val zip = b.add(Zip[I, F]())
         val norm = b.add(normalize)
