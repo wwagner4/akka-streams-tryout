@@ -8,7 +8,8 @@ object BufferingNormalizeFlow {
   // Transforms a stream of integers to their sum
   protected val maxFlow: Flow[Int, Int, Future[Int]] = {
     import FlowGraph.Implicits._
-    val maxSink: Sink[Int, Future[Int]] = Sink.fold[Int, Int](0)((cuml, elem) => if (elem > cuml) elem else cuml)
+    val maxSink: Sink[Int, Future[Int]] = Sink.fold[Int, Int](0)((cuml, elem) => 
+        if (elem > cuml) elem else cuml)
     Flow(maxSink) {
       implicit builder =>
         fold =>
