@@ -35,7 +35,7 @@ class NormalizeSuite extends FunSuite {
 
       val src: Source[Int, _] = randomIntegersSource(size = 10)
 
-      val cuml: Flow[Int, (Int, Int), _] = new ZipWithCumulated[Int, Int] {
+      val cuml = new ZipWithCumulated[Int, Int]() {
         def bufferSize = 1000
         def start = 0
         def cumulate = (c: Int, e: Int) => math.max(c, e)
