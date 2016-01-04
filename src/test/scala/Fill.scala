@@ -1,17 +1,22 @@
-import akka.stream.stage.{SyncDirective, Context, StageState, StatefulStage}
+import akka.stream.stage.DownstreamDirective
+import akka.stream.stage.DetachedContext
+import akka.stream.stage.UpstreamDirective
+import akka.stream.stage.DetachedStage
 
-// Takes the first element of a stream and transforms it into an endless stream of that element.
-class Fill[A]() extends StatefulStage[A, A] {
-  override def initial: StageState[A, A] =
-    new StageState[A, A] {
-      override def onPush(elem: A, ctx: Context[A]): SyncDirective = {
-        val iter = new Iterator[A] {
-          def hasNext = true
+class Fill[T] extends DetachedStage[T, T] {
+  private var currentValue: T = _
+  private var waitingFirstValue = true
 
-          def next() = elem
-        }
-        emit(iter, ctx)
-      }
-    }
+  override def onPush(elem: T, ctx: DetachedContext[T]): UpstreamDirective = {
+    currentValue = elem
+    waitingFirstValue = false
+    if (ctx.isHoldingDownstream) ctx.pushAndPull(currentValue)
+    else ctx.pull()
+  }
+
+  override def onPull(ctx: DetachedContext[T]): DownstreamDirective = {
+    if (waitingFirstValue) ctx.holdDownstream()
+    else ctx.push(currentValue)
+  }
+
 }
-
