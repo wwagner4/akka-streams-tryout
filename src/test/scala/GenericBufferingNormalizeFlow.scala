@@ -3,38 +3,36 @@ import akka.stream._
 import scala.concurrent._
 import akka.stream.stage._
 
-trait GenericBufferingNormalizeFlow[A, B] {
-  
+trait ZipWithCumulated[E, C] {
+
   import FlowGraph.Implicits._
-  
+
   def bufferSize: Int
-  
-  def start: B
-  
-  def combine: (B, A) => B
+
+  def start: C
+
+  def cumulate: (C, E) => C
 
   /**
    * Combines all the input values to one output value
    */
-  val foldFlow: Flow[A, B, Future[B]] = {
-    val maxSink: Sink[A, Future[B]] = Sink.fold[B, A](start)(combine)
-      
-    Flow(maxSink) {
+  val foldFlow: Flow[E, C, Future[C]] = {
+    val cumlSink: Sink[E, Future[C]] = Sink.fold[C, E](start)(cumulate)
+    Flow(cumlSink) {
       implicit builder =>
-        fold =>
-          (fold.inlet, builder.materializedValue.mapAsync(4)(identity).outlet)
+          val out = builder.materializedValue.mapAsync(4)(identity).outlet
+          fold => (fold.inlet, out)
     }
-
   }
 
-  def create: Flow[A, (A, B), _] = {
+  def apply(): Flow[E, (E, C), _] = {
 
     Flow() { implicit b =>
-      val bcast = b.add(Broadcast[A](2))
-      val zip = b.add(Zip[A, B]())
+      val bcast = b.add(Broadcast[E](2))
+      val zip = b.add(Zip[E, C]())
       val max = b.add(foldFlow)
-      val fill = b.add(Flow[B].transform(() => new Fill[B]()))
-      val buffer = b.add(Flow[A].buffer(bufferSize, OverflowStrategy.fail))
+      val fill = b.add(Flow[C].transform(() => new Fill[C]()))
+      val buffer = b.add(Flow[E].buffer(bufferSize, OverflowStrategy.fail))
 
       bcast ~> buffer ~> zip.in0
       bcast ~> max ~> fill ~> zip.in1
