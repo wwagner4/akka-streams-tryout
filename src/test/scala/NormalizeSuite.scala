@@ -9,12 +9,11 @@ import scala.concurrent.duration._
 
 class NormalizeSuite extends FunSuite {
 
-
   // A source always generating the same stream of random values
   def randomIntegersSource(size: Int): Source[Int, _] = {
     val ran = new java.util.Random(28347928347L)
     val iter = Iterator.continually(ran.nextInt(101))
-    Source(() => iter.take(size))
+    Source.fromIterator(() => iter.take(size))
   }
 
   test("normalize a stream of integers") {
@@ -54,7 +53,7 @@ class NormalizeSuite extends FunSuite {
       var cnt = 0
       nsrc.runForeach { norm =>
         cnt += 1
-        if (cnt % 1000 == 0) println("NO BUFFER A %7d %.3f" format(cnt, norm))
+        if (cnt % 1000 == 0) println("NO BUFFER A %7d %.3f" format (cnt, norm))
       }
     }
   }
@@ -73,7 +72,7 @@ class NormalizeSuite extends FunSuite {
       var cnt = 0
       nsrc.runForeach { norm =>
         cnt += 1
-        if (cnt % 1000 == 0) println("NO BUFFER B %7d %.3f" format(cnt, norm))
+        if (cnt % 1000 == 0) println("NO BUFFER B %7d %.3f" format (cnt, norm))
       }
     }
   }
