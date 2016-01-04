@@ -28,7 +28,7 @@ trait ZipWithCumulated[E, C] {
     }
   }
 
-  def apply(): Flow[E, (E, C), _] = {
+  def create: Flow[E, (E, C), _] = {
 
     Flow.fromGraph {
       GraphDSL.create() { implicit b =>

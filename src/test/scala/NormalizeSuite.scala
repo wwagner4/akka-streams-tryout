@@ -11,27 +11,41 @@ class NormalizeSuite extends FunSuite {
 
   // A source always generating the same stream of random values
   def randomIntegersSource(size: Int): Source[Int, _] = {
-    val ran = new java.util.Random(28347928347L)
+    val ran = new java.util.Random(283479287L)
     val iter = Iterator.continually(ran.nextInt(101))
     Source.fromIterator(() => iter.take(size))
   }
 
   test("normalize a stream of integers") {
-    withMaterializer { m: Materializer =>
-      implicit val materializer = m
+    intercept[java.util.concurrent.TimeoutException] {
+      withMaterializer { implicit m: Materializer =>
+
+        val src: Source[Int, _] = randomIntegersSource(size = 10)
+
+        // Converts a stream of positive integers to doubles ranging from 0 to 1.
+        // The greatest input value converts to 1
+        val normalizeFlow: Flow[Int, Double, _] = NormalizeFlow.create
+        src.via(normalizeFlow).runForeach { norm => println("SIMPLE %.3f" format norm) }
+      }
+    }
+  }
+
+  test("normalize a stream of integers generic") {
+    withMaterializer { implicit m: Materializer =>
 
       val src: Source[Int, _] = randomIntegersSource(size = 10)
 
-      // Converts a stream of positive integers to doubles ranging from 0 to 1.
-      // The greatest input value converts to 1
-      val normalizeFlow: Flow[Int, Double, _] = NormalizeFlow.create
-      src.via(normalizeFlow).runForeach { norm => println("SIMPLE %.3f" format norm) }
+      val normalizeFlow: Flow[Int, (Int, Int), _] = new ZipWithCumulated[Int, Int] {
+        def bufferSize = 1000
+        def start = 0
+        def cumulate = (c: Int, e: Int) => c + e
+      }.create
+      src.via(normalizeFlow).runForeach { norm => println("GENERIC %s" format norm) }
     }
   }
 
   test("normalize a stream of integers with buffer") {
-    withMaterializer { m: Materializer =>
-      implicit val materializer = m
+    withMaterializer { implicit m: Materializer =>
 
       val src: Source[Int, _] = randomIntegersSource(size = 10)
 
@@ -44,8 +58,7 @@ class NormalizeSuite extends FunSuite {
 
   test("normalize a source of integers without buffering") {
 
-    withMaterializer { m: Materializer =>
-      implicit val materializer = m
+    withMaterializer { implicit m: Materializer =>
 
       val src = randomIntegersSource(size = 20000)
       val nsrc: Source[Double, _] = NonBufferingNormalizer.normalize(src)
@@ -60,8 +73,7 @@ class NormalizeSuite extends FunSuite {
 
   test("normalize a source of integers without buffering and general normalizer") {
 
-    withMaterializer { m: Materializer =>
-      implicit val materializer = m
+    withMaterializer { implicit m: Materializer =>
 
       val src = randomIntegersSource(size = 20000)
       val fold = (in: Source[Int, _]) => in.fold(0) { (currMax, n) => n.max(currMax) }
