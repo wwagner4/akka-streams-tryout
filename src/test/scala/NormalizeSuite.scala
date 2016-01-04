@@ -35,12 +35,16 @@ class NormalizeSuite extends FunSuite {
 
       val src: Source[Int, _] = randomIntegersSource(size = 10)
 
-      val normalizeFlow: Flow[Int, (Int, Int), _] = new ZipWithCumulated[Int, Int] {
+      val cuml: Flow[Int, (Int, Int), _] = new ZipWithCumulated[Int, Int] {
         def bufferSize = 1000
         def start = 0
-        def cumulate = (c: Int, e: Int) => c + e
+        def cumulate = (c: Int, e: Int) => math.max(c, e)
       }.create
-      src.via(normalizeFlow).runForeach { norm => println("GENERIC %s" format norm) }
+
+      src
+        .via(cuml)
+        .map { case (value, max) => (value, value.toDouble / max) }
+        .runForeach { case (value, norm) => println("GENERIC normalized %6d %-6.2f" format (value, norm)) }
     }
   }
 
