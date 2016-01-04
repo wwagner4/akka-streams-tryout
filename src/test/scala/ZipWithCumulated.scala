@@ -34,12 +34,12 @@ trait ZipWithCumulated[E, C] {
       GraphDSL.create() { implicit b =>
         val bcast = b.add(Broadcast[E](2))
         val zip = b.add(Zip[E, C]())
-        val max = b.add(foldFlow)
+        val fold = b.add(foldFlow)
         val fill = b.add(Flow[C].transform(() => new Fill[C]()))
         val buffer = b.add(Flow[E].buffer(bufferSize, OverflowStrategy.fail))
 
         bcast ~> buffer ~> zip.in0
-        bcast ~> max ~> fill ~> zip.in1
+        bcast ~> fold ~> fill ~> zip.in1
 
         FlowShape(bcast.in, zip.out)
       }
